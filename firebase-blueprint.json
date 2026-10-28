@@ -1,0 +1,210 @@
+{
+  "entities": {
+    "LedgerAccount": {
+      "title": "LedgerAccount",
+      "description": "An apartment function or festival ledger account (e.g., Kali Pujo 2026 or archived Kali Pujo 2025).",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated owner UID matching request.auth.uid."
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the function account (1 to 100 chars)."
+        },
+        "year": {
+          "type": "integer",
+          "description": "Calendar year of the function (2000 to 2100)."
+        },
+        "defaultContribution": {
+          "type": "integer",
+          "description": "Standard per-resident contribution amount in INR."
+        },
+        "targetBudget": {
+          "type": "integer",
+          "description": "Planned total budget for the function in INR."
+        },
+        "archived": {
+          "type": "boolean",
+          "description": "Whether this function account is a historical reference archive."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation server timestamp submitted via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last modification server timestamp submitted via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "name",
+        "year",
+        "defaultContribution",
+        "targetBudget",
+        "archived",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "LedgerCategory": {
+      "title": "LedgerCategory",
+      "description": "Income or expense category for organizing apartment function transactions (e.g., Dhak, Thakur, Thakurmasai).",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated owner UID matching request.auth.uid."
+        },
+        "name": {
+          "type": "string",
+          "description": "Category name (1 to 60 chars)."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["EXPENSE", "INCOME"],
+          "description": "Whether this category tracks expenses or income."
+        },
+        "budgetLimit": {
+          "type": "integer",
+          "description": "Optional planned spend cap in INR (0 when unset)."
+        },
+        "colorHex": {
+          "type": "string",
+          "description": "Hex color token for category badge."
+        },
+        "iconKey": {
+          "type": "string",
+          "description": "Identifier for the Material icon representing this category."
+        },
+        "sortOrder": {
+          "type": "integer",
+          "description": "Display order index."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation server timestamp submitted via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last modification server timestamp submitted via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "name",
+        "type",
+        "budgetLimit",
+        "colorHex",
+        "iconKey",
+        "sortOrder",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "LedgerEntry": {
+      "title": "LedgerEntry",
+      "description": "A single income or expense transaction in an apartment function account.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated owner UID matching request.auth.uid."
+        },
+        "accountId": {
+          "type": "string",
+          "description": "Document ID of the parent LedgerAccount under /users/{userId}/accounts/{accountId}."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["EXPENSE", "INCOME"],
+          "description": "Transaction direction."
+        },
+        "amount": {
+          "type": "integer",
+          "description": "Positive transaction amount in INR (1 to 100000000)."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Document ID of the associated LedgerCategory."
+        },
+        "categoryName": {
+          "type": "string",
+          "description": "Denormalized category name for fast report rendering."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Description or item details for the ledger entry."
+        },
+        "partyName": {
+          "type": "string",
+          "description": "Contributor resident name or expense payee name (empty string if none)."
+        },
+        "paymentMode": {
+          "type": "string",
+          "enum": ["FUND", "MEMBER_ADVANCE", "REIMBURSED", "RESIDENT_PAID"],
+          "description": "How the expense or contribution was settled."
+        },
+        "dateStr": {
+          "type": "string",
+          "description": "Formatted date string in dd/MM/yyyy format."
+        },
+        "dateEpochMillis": {
+          "type": "integer",
+          "description": "Transaction date epoch timestamp in milliseconds for chronological sorting."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation server timestamp submitted via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last modification server timestamp submitted via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "accountId",
+        "type",
+        "amount",
+        "categoryId",
+        "categoryName",
+        "notes",
+        "partyName",
+        "paymentMode",
+        "dateStr",
+        "dateEpochMillis",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/accounts/{accountId}": {
+      "schema": {
+        "$ref": "#/entities/LedgerAccount"
+      },
+      "description": "Function ledger accounts owned by the authenticated apartment account manager."
+    },
+    "/users/{userId}/categories/{categoryId}": {
+      "schema": {
+        "$ref": "#/entities/LedgerCategory"
+      },
+      "description": "Income and expense categories configured by the user."
+    },
+    "/users/{userId}/entries/{entryId}": {
+      "schema": {
+        "$ref": "#/entities/LedgerEntry"
+      },
+      "description": "Individual income and expense ledger entries scoped to the user and a LedgerAccount."
+    }
+  }
+}

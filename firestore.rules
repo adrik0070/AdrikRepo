@@ -1,0 +1,235 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core security primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation blueprint: LedgerAccount
+    function isValidLedgerAccount(data, pathUserId) {
+      return data.keys().hasAll([
+          'userId', 'name', 'year', 'defaultContribution',
+          'targetBudget', 'archived', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'userId', 'name', 'year', 'defaultContribution',
+          'targetBudget', 'archived', 'createdAt', 'updatedAt'
+        ]) &&
+        data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+        request.auth != null && data.userId == request.auth.uid &&
+        data.userId == pathUserId &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+        data.year is int && data.year >= 2000 && data.year <= 2100 &&
+        data.defaultContribution is int && data.defaultContribution >= 0 && data.defaultContribution <= 10000000 &&
+        data.targetBudget is int && data.targetBudget >= 0 && data.targetBudget <= 100000000 &&
+        data.archived is bool &&
+        data.createdAt is timestamp && data.createdAt <= request.time &&
+        data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // Validation blueprint: LedgerCategory
+    function isValidLedgerCategory(data, pathUserId) {
+      return data.keys().hasAll([
+          'userId', 'name', 'type', 'budgetLimit',
+          'colorHex', 'iconKey', 'sortOrder', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'userId', 'name', 'type', 'budgetLimit',
+          'colorHex', 'iconKey', 'sortOrder', 'createdAt', 'updatedAt'
+        ]) &&
+        data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+        request.auth != null && data.userId == request.auth.uid &&
+        data.userId == pathUserId &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 60 &&
+        data.type is string && data.type.size() >= 6 && data.type.size() <= 7 &&
+        (data.type == 'EXPENSE' || data.type == 'INCOME') &&
+        data.budgetLimit is int && data.budgetLimit >= 0 && data.budgetLimit <= 100000000 &&
+        data.colorHex is string && data.colorHex.size() >= 4 && data.colorHex.size() <= 9 &&
+        data.iconKey is string && data.iconKey.size() >= 1 && data.iconKey.size() <= 40 &&
+        data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 10000 &&
+        data.createdAt is timestamp && data.createdAt <= request.time &&
+        data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // Validation blueprint: LedgerEntry
+    function isValidLedgerEntry(data, pathUserId) {
+      return data.keys().hasAll([
+          'userId', 'accountId', 'type', 'amount', 'categoryId',
+          'categoryName', 'notes', 'partyName', 'paymentMode',
+          'dateStr', 'dateEpochMillis', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'userId', 'accountId', 'type', 'amount', 'categoryId',
+          'categoryName', 'notes', 'partyName', 'paymentMode',
+          'dateStr', 'dateEpochMillis', 'createdAt', 'updatedAt'
+        ]) &&
+        data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+        request.auth != null && data.userId == request.auth.uid &&
+        data.userId == pathUserId &&
+        isValidId(data.accountId) &&
+        data.type is string && data.type.size() >= 6 && data.type.size() <= 7 &&
+        (data.type == 'EXPENSE' || data.type == 'INCOME') &&
+        data.amount is int && data.amount >= 1 && data.amount <= 100000000 &&
+        isValidId(data.categoryId) &&
+        data.categoryName is string && data.categoryName.size() >= 1 && data.categoryName.size() <= 60 &&
+        data.notes is string && data.notes.size() >= 1 && data.notes.size() <= 300 &&
+        data.partyName is string && data.partyName.size() <= 100 &&
+        data.paymentMode is string && data.paymentMode.size() >= 4 && data.paymentMode.size() <= 20 &&
+        (
+          data.paymentMode == 'FUND' ||
+          data.paymentMode == 'MEMBER_ADVANCE' ||
+          data.paymentMode == 'REIMBURSED' ||
+          data.paymentMode == 'RESIDENT_PAID'
+        ) &&
+        data.dateStr is string && data.dateStr.size() >= 8 && data.dateStr.size() <= 20 &&
+        data.dateEpochMillis is int && data.dateEpochMillis >= 946684800000 && data.dateEpochMillis <= 4102444800000 &&
+        data.createdAt is timestamp && data.createdAt <= request.time &&
+        data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /users/{userId} {
+      // Accounts subcollection
+      match /accounts/{accountId} {
+        allow get: if isSignedIn() &&
+          request.auth.uid == userId &&
+          isValidId(userId) &&
+          isValidId(accountId) &&
+          existing().userId == request.auth.uid;
+
+        allow list: if isSignedIn() &&
+          request.auth.uid == userId &&
+          existing().userId == request.auth.uid;
+
+        allow create: if isSignedIn() &&
+          request.auth.uid == userId &&
+          isValidId(userId) &&
+          isValidId(accountId) &&
+          isValidLedgerAccount(incoming(), userId);
+
+        allow update: if isValidLedgerAccount(incoming(), userId) &&
+          isSignedIn() &&
+          request.auth.uid == userId &&
+          isValidId(userId) &&
+          isValidId(accountId) &&
+          existing().userId == request.auth.uid &&
+          incoming().userId == existing().userId &&
+          incoming().createdAt == existing().createdAt &&
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'name', 'year', 'defaultContribution', 'targetBudget', 'archived', 'updatedAt'
+            ]) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['archived', 'updatedAt'])
+          );
+
+        allow delete: if isSignedIn() &&
+          request.auth.uid == userId &&
+          isValidId(userId) &&
+          isValidId(accountId) &&
+          existing().userId == request.auth.uid;
+      }
+
+      // Categories subcollection
+      match /categories/{categoryId} {
+        allow get: if isSignedIn() &&
+          request.auth.uid == userId &&
+          isValidId(userId) &&
+          isValidId(categoryId) &&
+          existing().userId == request.auth.uid;
+
+        allow list: if isSignedIn() &&
+          request.auth.uid == userId &&
+          existing().userId == request.auth.uid;
+
+        allow create: if isSignedIn() &&
+          request.auth.uid == userId &&
+          isValidId(userId) &&
+          isValidId(categoryId) &&
+          isValidLedgerCategory(incoming(), userId);
+
+        allow update: if isValidLedgerCategory(incoming(), userId) &&
+          isSignedIn() &&
+          request.auth.uid == userId &&
+          isValidId(userId) &&
+          isValidId(categoryId) &&
+          existing().userId == request.auth.uid &&
+          incoming().userId == existing().userId &&
+          incoming().createdAt == existing().createdAt &&
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'name', 'type', 'budgetLimit', 'colorHex', 'iconKey', 'sortOrder', 'updatedAt'
+            ]) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['budgetLimit', 'updatedAt'])
+          );
+
+        allow delete: if isSignedIn() &&
+          request.auth.uid == userId &&
+          isValidId(userId) &&
+          isValidId(categoryId) &&
+          existing().userId == request.auth.uid;
+      }
+
+      // Entries subcollection
+      match /entries/{entryId} {
+        allow get: if isSignedIn() &&
+          request.auth.uid == userId &&
+          isValidId(userId) &&
+          isValidId(entryId) &&
+          existing().userId == request.auth.uid;
+
+        allow list: if isSignedIn() &&
+          request.auth.uid == userId &&
+          existing().userId == request.auth.uid;
+
+        allow create: if isSignedIn() &&
+          request.auth.uid == userId &&
+          isValidId(userId) &&
+          isValidId(entryId) &&
+          isValidLedgerEntry(incoming(), userId) &&
+          existsAfter(/databases/$(database)/documents/users/$(userId)/accounts/$(incoming().accountId));
+
+        allow update: if isValidLedgerEntry(incoming(), userId) &&
+          isSignedIn() &&
+          request.auth.uid == userId &&
+          isValidId(userId) &&
+          isValidId(entryId) &&
+          existing().userId == request.auth.uid &&
+          incoming().userId == existing().userId &&
+          incoming().accountId == existing().accountId &&
+          incoming().createdAt == existing().createdAt &&
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'type', 'amount', 'categoryId', 'categoryName', 'notes',
+              'partyName', 'paymentMode', 'dateStr', 'dateEpochMillis', 'updatedAt'
+            ]) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['paymentMode', 'updatedAt'])
+          );
+
+        allow delete: if isSignedIn() &&
+          request.auth.uid == userId &&
+          isValidId(userId) &&
+          isValidId(entryId) &&
+          existing().userId == request.auth.uid;
+      }
+    }
+  }
+}

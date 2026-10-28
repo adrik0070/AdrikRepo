@@ -1,0 +1,6 @@
+{
+  "name": "Utsav Ledger",
+  "description": "Apartment function and festival account manager for tracking resident contributions, categorized expenses, live balances, year-over-year comparisons, and PDF statements.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

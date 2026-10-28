@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">Utsav Ledger</string>
+    <string name="app_tagline">Apartment Function &amp; Festival Account Manager</string>
+    <string name="sign_in_with_google">Sign in with Google</string>
+    <string name="sign_in_subtitle">Securely sync your apartment function accounts, resident contributions, category budgets, and PDF statements across devices.</string>
+    <string name="sign_in_highlight_2026">Pre-configured with Kali Pujo 2026 (Dhak, Thakur, Thakurmasai) &amp; full Kali Pujo 2025 40-entry archive.</string>
+    <string name="sign_out">Sign out</string>
+    <string name="nav_ledger">Ledger</string>
+    <string name="nav_residents">Residents</string>
+    <string name="nav_categories">Categories</string>
+    <string name="nav_reports">Reports</string>
+    <string name="total_balance">Total Balance</string>
+    <string name="total_income">Total Income</string>
+    <string name="total_expense">Total Expense</string>
+    <string name="cash_in_hand">Fund Cash in Hand</string>
+    <string name="pending_reimbursements">Due to Members</string>
+    <string name="add_entry">Add Entry</string>
+    <string name="add_expense">Add Expense</string>
+    <string name="add_income">Collect Chanda</string>
+    <string name="add_category">Add Category</string>
+    <string name="new_function">New Function</string>
+    <string name="export_pdf_report">Export &amp; Share PDF Report</string>
+    <string name="share_text_summary">Share Group Summary</string>
+    <string name="mark_reimbursed">Mark Reimbursed</string>
+    <string name="empty_entries_title">No matching entries</string>
+    <string name="empty_entries_subtitle">Tap Add Entry below to record an apartment contribution or festival expense.</string>
+    <string name="search_entries_hint">Search notes, resident, or category…</string>
+    <string name="chronological_order">Oldest First</string>
+    <string name="latest_order">Latest First</string>
+    <string name="recommendations_title">Account Manager Playbook for 2026</string>
+</resources>
